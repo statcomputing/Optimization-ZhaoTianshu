@@ -1,0 +1,363 @@
+---
+title: "5361 HW2"
+author: "Tianshu Zhao"
+date: "February 7, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+# Question 1
+##1(a)
+Proof.
+
+\begin{align}
+l(\theta)\\&= \ln \prod_{i = 1}^n \frac{1}{\pi[1+(x-\theta)^2]}&\\
+           &= \sum_{i=1}^n \ln \frac{1}{\pi[1+(x-\theta)^2]}&\\
+           &= \sum_{i=1}^n [\ln \frac{1}{\pi} + \ln \frac{1}{1+(x-\theta)^2}]&\\
+           &= -n \ln \pi - \sum_{i=1}^n \ln [1+(x-\theta)^2]&\\
+\end{align} 
+
+\begin{align}
+l' (\theta)\\ &= 0 - \sum_{i=1}^n \frac{2(\theta-x_i)}{1+(\theta-x_i)^2}&\\
+              &= - 2\sum_{i=1}^n \frac{\theta - x_i}{1+(\theta-x_i)}&\\
+\end{align}        
+
+\begin{align}
+l''(\theta)\\&= -2 \sum_{i=1}^n \frac{1+(\theta-x_i)^2-2(\theta-x_i)(\theta-x_i)}{[1+(\theta-x_i)^2]^2}&\\
+             &= -2 \sum_{i=1}^n \frac{1-(\theta-x_i)^2}{[1+(\theta-x_i)^2]^2}&\\
+\end{align}
+
+\begin{align}
+I(\theta)\\
+          &= n \int \frac{\{p'(x)\}^2}{p(x)}dx\\ 
+          &= n \int \frac{4(x-\theta)^2}{\pi[1+(x-\theta)^2]^4}*\pi[1+(x-\theta)^2]dx&\\
+          &= \frac{4n}{\pi} \int_{-\infty}^\infty \frac{(x-\theta)^2}{[1+(x-\theta)^2]^3}dx&\\
+          &= \frac{4n}{\pi} \int_{-\infty}^\infty \frac{x^2}{(1+x^2)^3}dx&\\
+          &= \frac{4n}{\pi} (\int_{-\infty}^\infty \frac{1}{(1+x^2)^2}dx-\int_{-\infty}^\infty\frac{1}{(1+x^2)^3}dx)&\\
+          &= \frac{4n}{\pi} [\int_{-\infty}^{\infty}\frac{1}{(1+x^2)^2}dx-(\frac{x}{4(1+x^2)^2}|_{-\infty}^{\infty}+\frac{3}{4}\int_{-\infty}^{\infty}\frac{dx}{(1+x^2)^2})]&\\
+          &= \frac{4n}{\pi}(\int_{-\infty}^{\infty}\frac{1}{4(1+x^2)^2}dx-\frac{x}{4(1+x^2)^2}|_{-\infty}^{\infty})&\\
+          &= \frac{4n}{\pi} [\frac{1}{4}(\frac{x}{2(1+x^2)}|_{-\infty}^{\infty}+\frac{1}{2}\int_{-\infty}^{\infty}\frac{1}{1+x^2}dx)-\frac{x}{4(1+x^2)^2}|_{-\infty}^\infty]&\\
+          &= \frac{4n}{\pi}(\frac{x(x^2-1)}{8(1+x^2)^2}|_{-\infty}^\infty+\frac{1}{8}\int_{-\frac{\pi}{2}}^{\frac{\pi}{2}} \frac{\sec^2t}{1+\tan^2t}dt)&\\
+          &= \frac{4n}{\pi}(0+\frac{\pi}{8})&\\
+          &= \frac{n}{2}&\\
+\end{align}
+
+##1(b)
+The gragh of likelihood function
+
+```{r, echo = FALSE}
+##gragh log-likelihood function
+x <- c(1.77, -0.23, 2.76, 3.80, 3.47, 
+       56.75, -1.34, 4.24, -2.44,
+       3.29, 3.71, -2.40, 4.53, -0.07, 
+       -1.05, -13.87, -2.53, -1.75)
+
+#generate an array for theta
+theta <- array(seq(-40, 40, 0.1))
+
+#define log-likelihood function
+log_likelihood <- function(t){
+  l_theta <- -length(x)*log(pi)-sum(log(1+(t-x)^2))
+  return(l_theta)
+}
+
+l <- array()
+for (q in 1:length(theta)){
+  l[q] <- log_likelihood(theta[q])
+}
+plot(theta, l, type="l", main="log-likelihood function Q1",
+     xlab="theta", ylab="l(theta)")
+```
+
+Find MLE using Newton-Raphson method:
+
+Below is the code "nlminb" for Newton-Raphson method:
+```{r}
+nlminb_1b <- function(x0){
+  X <- array()
+  X[1] <- x0
+  i <- 1
+  difference <- 1
+  while(abs(difference)>= 0.0001){
+    X[i+1] <- X[i]-gr_l(X[i])/hess_l(X[i])
+    difference <- X[i+1]-X[i]
+    i <- i+1
+  }
+  return(X[i])
+}
+```
+
+Where gr_l and hess_l are gradient and Hessian for the log-likelihood function:
+```{r}
+gr_l <- function(t){
+  grad_l <- -2*sum((t-x)/(1+(t-x)^2))
+  return(grad_l)
+}
+hess_l <- function(t){
+  he_l <- -2*sum((1-(t-x)^2)/(1+(t-x)^2))^2
+  return(he_l)
+}
+```
+
+Find MLE for the following starting points
+```{r}
+sp <- c(-11,-1, 0, 1.5, 4, 4.7, 7, 8, 38)
+
+MLE_1b <- array()
+for (k in 1:length(sp)){
+  MLE_1b[k] <- nlminb_1b(x0=sp[k])
+}
+```
+
+MLE vector is 
+```{r, echo = FALSE}
+MLE_1b
+```
+
+If we use sample mean as the starting point, then MLE equals to:
+```{r, echo = FALSE}
+nlminb_1b(x0=mean(x))
+```
+
+So, sample mean is a good starting point compared to each sample. 
+
+##1(c)
+Apply fixed-point iterations using G(x) = alpha*l`(theta)+theta, with scaling choices of ?? ??? {1, 0.64, 0.25}, 
+for the same starting points above.
+
+Code "nlminb" for Newton-Raphson method is:
+```{r}
+#nlminb for fixed point iteration
+nlminb_1c <- function(x0,alpha){
+  X <- array()
+  X[1] <- x0
+  i=1
+  difference <- 1
+  while(abs(difference)>= 0.0001 & i<100){
+    X[i+1] <- X[i]+gr_l(X[i])*alpha
+    difference <- X[i+1]-X[i]
+    i <- i+1
+  }
+  return(X[i])
+}
+```
+
+
+MLE array is 
+```{r, echo = FALSE}
+#alpha vector
+al <- c(1, 0.64, 0.25)
+#find MLE
+MLE_1c <- array(dim=c(length(sp),length(al)))
+for (p in 1:length(sp)){
+  for (q in 1:length(al)){
+    MLE_1c[p,q] <- nlminb_1c(sp[p],al[q])
+  }
+}
+MLE_1c
+```
+
+##1(d)
+Next, we use Fisher scoring to find the MLE for theta.
+
+Fisher information is
+```{r}
+#Fisher information for x
+I_theta <- length(x)/2
+```
+Code "nlminb" for Fisher scoring is:
+```{r}
+#nlminb for Fisher scoring
+nlminb_1d <- function(x0){
+  X <- array()
+  X[1] <- x0
+  i=1
+  difference <- 1
+  while(abs(difference)>= 0.0001){
+    X[i+1] <- X[i]+gr_l(X[i])/I_theta
+    difference <- X[i+1]-X[i]
+    i <- i+1
+  }
+  return(X[i])
+}
+```
+MLE array is
+```{r, echo = FALSE}
+#find MLE using Fisher scoring
+MLE_1d <- array()
+for (k1 in 1:length(sp)){
+  MLE_1d[k1] <- nlminb_1d(x0=sp[k1])
+}
+MLE_1d
+```
+And then we run Newton-Raphson method to refine the estimate above and we get refined MLE:
+```{r, echo = FALSE}
+#refine the estimate with Newton-Raphson method
+MLE_1d2 <- array()
+for (k2 in 1:length(MLE_1d)){
+  MLE_1d2[k2] <- nlminb_1b(x0=MLE_1d[k2])
+}
+MLE_1d2
+```
+##1(e)
+The convergent speed of Newton-Raphson method is the fastest among the three, while the fixed-point method has more fluctuation than the other two functions.
+
+#Question 2
+##2(a)
+The gragh of likelihood function
+
+```{r, echo = FALSE}
+##gragh log-likelihood function
+x2 <- c(3.91, 4.85, 2.28, 4.06, 3.70,
+       4.04,5.46, 3.53, 2.28, 1.96,
+       2.53, 3.88, 2.22, 3.47, 4.82,
+       2.46, 2.99, 2.54, 0.52)
+
+#generate an array for theta
+theta2 <- array(seq(-pi, pi, 0.05))
+
+#define log-likelihood function
+log_likelihood2 <- function(t){
+  l_theta <- -length(x2)*log(2*pi)+sum(log(1-cos(x2-t)))
+  return(l_theta)
+}
+
+l2 <- array()
+for (q in 1:length(theta2)){
+  l2[q] <- log_likelihood2(theta2[q])
+}
+plot(theta2, l2, type="l", main="log-likelihood function Q2",
+     xlab="theta", ylab="l(theta)")
+
+```
+
+##2(b)
+expression for E[X|theta]: E[X|theta]=pi-sin(theta),which is equivalent to the expression below,
+so that theta_moment can be determined:
+```{r}
+theta_mo1 <- asin(mean(x2)-pi)
+theta_mo2 <- pi-asin(mean(x2)-pi)
+```
+And theta_moments are:
+```{r}
+theta_mo1
+theta_mo2
+```
+
+##2(c)
+Find MLE using Newton-Raphson method with theta_moment:
+
+Below is the code "nlminb" for Newton-Raphson method:
+```{r}
+#nlminb for Newton-Raphson method
+nlminb_2c <- function(x0){
+  X <- array()
+  X[1] <- x0
+  i <- 1
+  difference <- 1
+  while(abs(difference)>= 0.0001){
+    X[i+1] <- X[i]-gr_l2(X[i])/hess_l2(X[i])
+    difference <- X[i+1]-X[i]
+    i <- i+1
+  }
+  return(X[i])
+}
+```
+Where gr_l2 and hess_l2 are gradient and Hessian for the log-likelihood function:
+```{r}
+#gradient and Hessian for the log-likelihood function
+gr_l2 <- function(t){
+  grad_l <- sum(sin(x2-t)/(1-cos(x2-t)))
+  return(grad_l)
+}
+hess_l2 <- function(t){
+  he_l <- sum(1/(1-cos(x2-t)))
+  return(he_l)
+}
+
+```
+Find MLEs with theta_moments:
+```{r}
+MLE_2c1 <- array()
+MLE_2c1 <- nlminb_2c(theta_mo1)
+MLE_2c1
+MLE_2c2 <- array()
+MLE_2c2 <- nlminb_2c(theta_mo2)
+MLE_2c2
+```
+
+##2(d)
+When we start at theta0 = ???2.7 and theta0 = 2.7, we find:
+```{r}
+#find MLE theta0 = +/-2.7 
+MLE_2d1 <- array()
+MLE_2d1 <- nlminb_2c(2.7)
+MLE_2d1
+MLE_2d2 <- array()
+MLE_2d2 <- nlminb_2c(-2.7)
+MLE_2d2
+```
+
+#Question 3
+##3(a)
+Fit the population growth model to the beetles data using the Gauss-Newton approach:
+
+First, subsitute data for the model, where t denotes time, y denotes observerd value of the population:
+```{r}
+beetles <- data.frame(
+  days = c(0, 8, 28, 41, 63, 69, 97, 117, 135, 154),
+  beetles = c(2, 47, 192, 256, 768, 896, 1120, 896, 1184, 1024))
+t <- beetles$days
+y <- beetles$beetles
+N0 <- y[1]
+```
+Then, define functions for f(t), partial derivative of f(t) for K and r, and define functions for A and z in Gauss-Newton approach:
+```{r}
+f_t <- function(K,r){
+  f <- K*N0/(N0+(K-N0)*exp(-r*t))
+  return(f)
+}
+f_deri_K <- function(K,r){
+  f <- N0^2*(1-exp(-r*t))/(N0+(K-N0)*exp(-r*t))^2
+  return(f)
+}
+f_deri_r <- function(K,r){
+  f <- t*K*N0*(K-N0)*exp(-r*t)/(N0+(K-N0)*exp(-r*t))^2
+  return(f)
+}
+A <- function(K,r){
+  At <- array(dim=c(length(t),2))
+  At[,1] <- t(f_deri_K(K,r))
+  At[,2] <- t(f_deri_r(K,r))
+  return(At)
+}
+z <- function(K,r){
+  Z <- array(dim=c(length(t),1))
+  Z <- y-f_t(K,r)
+  return(Z)
+}
+```
+Next, we can define "nls" function for Gauss-Newton method:
+```{r}
+#nls for Gauss-Newton approach
+nls_3a <- function(K0,r0){
+  Kr <- array(dim=c(2,1000))
+  Kr[,1] <- c(K0,r0)
+  i <- 1
+  difference <- 1
+  while(difference >= 0.0001){
+    Kr[,i+1] <- Kr[,i]+(solve((t(A(Kr[1,i],Kr[2,i])))%*%A(Kr[1,i],Kr[2,i])))%*%t(A(Kr[1,i],Kr[2,i]))%*%z(Kr[1,i],Kr[2,i])
+    difference <- sum(abs(Kr[,i+1]-Kr[,i]))
+    i <- i+1
+  }
+  return(Kr[,i])
+}
+```
+Finally, we find model prediction by giving an initial pair of (K0,r0) = (1000,0.5):
+```{r,echo = FALSE}
+nls_3a(1000,0.5)
+```
+So the prediction of K and r given by this model is 1049.4072354 and  0.1182684.
+
